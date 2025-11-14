@@ -137,3 +137,59 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# ============================================
+# Backend (Java/Spring Boot)
+# ============================================
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+backend/*.iml
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/bin/
+backend/.gradle/
+backend/build/
+backend/gradle/
+backend/gradlew
+backend/gradlew.bat
+
+# ============================================
+# IDEs
+# ============================================
+.idea/
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# System Files
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+
+# ============================================
+# Environment Variables (already covered above but being explicit)
+# ============================================
+.env.development
+.env.test
+.env.production.local
+.env.development.local
+.env.test.local
