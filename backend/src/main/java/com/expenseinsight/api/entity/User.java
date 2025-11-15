@@ -86,6 +86,7 @@ public class User extends BaseEntity {
      * Defaults to true. Can be set to false for soft deletion.
      */
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     /**
