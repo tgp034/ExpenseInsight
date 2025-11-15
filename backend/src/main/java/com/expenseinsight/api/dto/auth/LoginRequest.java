@@ -7,6 +7,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request object for user authentication/login.
+ * 
+ * <p>Contains the credentials required for a user to authenticate
+ * with the ExpenseInsight application.</p>
+ * 
+ * @author ExpenseInsight Team
+ * @version 1.0
+ * @since 1.0
+ */
 @Data
 @Builder
 @NoArgsConstructor

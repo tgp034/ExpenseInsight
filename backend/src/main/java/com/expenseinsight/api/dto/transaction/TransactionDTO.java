@@ -10,6 +10,17 @@ import java.time.LocalDate;
 
 import com.expenseinsight.api.entity.enums.TransactionType;
 
+/**
+ * Data Transfer Object for transaction information.
+ * 
+ * <p>Used to transfer transaction data between the API layer and clients.
+ * Contains all transaction details including amount, description, category,
+ * and optional AI-generated insights.</p>
+ * 
+ * @author ExpenseInsight Team
+ * @version 1.0
+ * @since 1.0
+ */
 @Data
 @Builder
 @NoArgsConstructor

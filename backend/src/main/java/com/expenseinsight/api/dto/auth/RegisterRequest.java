@@ -8,6 +8,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Request object for user registration.
+ * 
+ * <p>Contains all required information to create a new user account
+ * in the ExpenseInsight application. Includes validation constraints
+ * to ensure data integrity.</p>
+ * 
+ * @author ExpenseInsight Team
+ * @version 1.0
+ * @since 1.0
+ */
 @Data
 @Builder
 @NoArgsConstructor
