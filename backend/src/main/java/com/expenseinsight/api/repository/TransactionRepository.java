@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.math.BigDecimal;
 
 
 /**
@@ -84,20 +85,24 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     );
 
     /**
-     * Aggregates (sums) the transaction amounts for a user filtered by type
-     * and date range. May return {@code null} when no matching transactions
-     * are present.
+     * Aggregates (sums) the transaction amounts for a user filtered by
+     * category, type and date range. Returns {@link BigDecimal} to preserve
+     * monetary precision. May return {@code null} when no matching
+     * transactions are present.
      *
-     * @param userId    id of the user
-     * @param type      transaction type to aggregate
-     * @param startDate start of the date range
-     * @param endDate   end of the date range
-     * @return the summed amount or {@code null} when no matching rows
+     * @param userId     id of the user
+     * @param categoryId id of the category
+     * @param type       transaction type to aggregate
+     * @param startDate  start of the date range
+     * @param endDate    end of the date range
+     * @return the summed amount as {@link BigDecimal} or {@code null}
      */
     @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.user.id = :userId " +
-            "AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
-    Double getTotalAmountByUserAndTypeAndDateRange(
+            "AND t.category.id = :categoryId AND t.type = :type " +
+            "AND t.transactionDate BETWEEN :startDate AND :endDate")
+    BigDecimal getTotalAmountByUserAndTypeAndCategoryAndDateRange(
             @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId,
             @Param("type") TransactionType type,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
