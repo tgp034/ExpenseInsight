@@ -96,9 +96,9 @@ public class UserService {
         User updatedUser = userRepository.save(user);
 
         // Recalculate statistics
-        Integer totalTransactions = transactionRepository.findByUserIdOrderByTransactionDateDesc(userId).size();
-        Integer totalBudgets = budgetRepository.findByUserId(userId).size();
-
+        Integer totalTransactions = Math.toIntExact(transactionRepository.countByUserId(userId));
+        Integer totalBudgets = Math.toIntExact(budgetRepository.countByUserId(userId));
+        
         return UserProfileResponse.builder()
                 .id(updatedUser.getId())
                 .email(updatedUser.getEmail())

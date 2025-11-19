@@ -4,6 +4,7 @@ import com.expenseinsight.api.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -24,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Security configuration class for ExpenseInsight API.
@@ -73,6 +75,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+
+    @Value("#{'${cors.allowed.origins:http://localhost:3000}'.split(',')}")
+    private List<String> allowedOrigins;
 
     /**
      * Configures the security filter chain.
@@ -143,8 +148,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow frontend origin
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // Allow configured frontend origins (comma-separated)
+        List<String> origins = allowedOrigins.stream()
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .collect(Collectors.toList());
+
+        configuration.setAllowedOriginPatterns(origins);
 
         // Allow common HTTP methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
@@ -176,7 +186,8 @@ public class SecurityConfig {
      * @return Configured AuthenticationProvider
      */
     @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         // optionally:

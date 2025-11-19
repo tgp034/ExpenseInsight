@@ -18,7 +18,8 @@ public class OpenAiConfig {
     @Bean
     public OpenAIClient openAIClient() {
         // Creates a client configured from environment variables.
-        // Ensure you set OPENAI_API_KEY (and optionally OPENAI_BASE_URL) in your environment.
+        // Ensure you set OPENAI_API_KEY (and optionally OPENAI_BASE_URL) in your
+        // environment.
         return OpenAIOkHttpClient.fromEnv();
     }
 }

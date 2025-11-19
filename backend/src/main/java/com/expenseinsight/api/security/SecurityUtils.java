@@ -4,6 +4,7 @@ import com.expenseinsight.api.entity.User;
 import com.expenseinsight.api.exception.UnauthorizedException;
 import com.expenseinsight.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,7 +51,7 @@ public class SecurityUtils {
     public String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
             throw new UnauthorizedException("No authenticated user found");
         }
 
@@ -59,7 +60,11 @@ public class SecurityUtils {
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
         } else {
-            return principal.toString();
+            String principalValue = principal.toString();
+            if ("anonymousUser".equalsIgnoreCase(principalValue)) {
+                throw new UnauthorizedException("No authenticated user found");
+            }
+            return principalValue;
         }
     }
 

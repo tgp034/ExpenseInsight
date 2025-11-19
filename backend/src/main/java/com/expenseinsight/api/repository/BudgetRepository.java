@@ -29,6 +29,14 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
         List<Budget> findByUserId(Long userId);
 
         /**
+         * Counts total budgets configured by the specified user.
+         *
+         * @param userId identifier of the user owning the budgets
+         * @return number of budgets belonging to the user
+         */
+        long countByUserId(Long userId);
+
+        /**
          * Finds budgets for a user limited to a specific month and year.
          *
          * @param userId identifier of the user owning the budgets
