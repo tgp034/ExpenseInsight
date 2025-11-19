@@ -15,12 +15,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +48,34 @@ public class OpenAiSdkService {
 
     @Value("${openai.temperature:0.7}")
     private Double defaultTemperature;
+
+    @Value("${openai.retry.count:3}")
+    private int retryCount;
+
+    @Value("${openai.retry.initialDelayMs:500}")
+    private long retryInitialDelayMs;
+
+    // Resilience4j components
+    private io.github.resilience4j.retry.Retry resilienceRetry;
+    private io.github.resilience4j.circuitbreaker.CircuitBreaker resilienceCircuitBreaker;
+
+        @jakarta.annotation.PostConstruct
+    private void initResilience() {
+        io.github.resilience4j.retry.RetryConfig retryConfig = io.github.resilience4j.retry.RetryConfig.custom()
+                .maxAttempts(retryCount + 1) // resilience4j counts attempts including initial
+                .waitDuration(java.time.Duration.ofMillis(retryInitialDelayMs))
+                .build();
+
+        resilienceRetry = io.github.resilience4j.retry.Retry.of("openaiRetry", retryConfig);
+
+        io.github.resilience4j.circuitbreaker.CircuitBreakerConfig cbConfig = io.github.resilience4j.circuitbreaker.CircuitBreakerConfig.custom()
+                .failureRateThreshold(50)
+                .waitDurationInOpenState(java.time.Duration.ofSeconds(30))
+                .slidingWindowSize(10)
+                .build();
+
+        resilienceCircuitBreaker = io.github.resilience4j.circuitbreaker.CircuitBreaker.of("openaiCB", cbConfig);
+    }
 
     public CategorySuggestionResponse suggestCategory(CategorySuggestionRequest request) {
         List<Category> expenseCategories = categoryRepository.findByType(TransactionType.EXPENSE);
@@ -59,8 +96,7 @@ public class OpenAiSdkService {
                         "Format: CategoryName|0.95|Your comment here",
                 request.getDescription(),
                 request.getAmount(),
-                categoriesText
-        );
+                categoriesText);
 
         String raw = callChatCompletion(defaultModel, prompt, defaultMaxTokens, defaultTemperature);
         if (raw == null || raw.isBlank()) {
@@ -101,7 +137,8 @@ public class OpenAiSdkService {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(6);
 
-        List<Transaction> transactions = transactionRepository.findUserTransactionsByDateRange(userId, startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findUserTransactionsByDateRange(userId, startDate,
+                endDate);
 
         BigDecimal totalIncome = transactions.stream()
                 .filter(t -> t.getType() == TransactionType.INCOME)
@@ -119,8 +156,7 @@ public class OpenAiSdkService {
                 .filter(t -> t.getType() == TransactionType.EXPENSE)
                 .collect(Collectors.groupingBy(
                         t -> t.getCategory().getName(),
-                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
-                ))
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)))
                 .entrySet().stream()
                 .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
                 .limit(3)
@@ -144,8 +180,7 @@ public class OpenAiSdkService {
                 totalIncome,
                 totalExpenses,
                 netBalance,
-                String.join("\n", topCategories)
-        );
+                String.join("\n", topCategories));
 
         String raw = callChatCompletion(defaultModel, prompt, 300, defaultTemperature);
         if (raw == null || raw.isBlank()) {
@@ -171,21 +206,43 @@ public class OpenAiSdkService {
     }
 
     private String callChatCompletion(String model, String prompt, Integer maxTokens, Double temperature) {
+        int tokensEstimate = Math.max(1, prompt.length() / 4);
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = (auth != null && auth.isAuthenticated() && auth.getName() != null) ? auth.getName() : "anonymous";
+
+        log.info("OpenAI request => user={}, model={}, tokensEstimate={}", userId, model, tokensEstimate);
+
+        Supplier<String> supplier = () -> {
+            try {
+                ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
+                        .addUserMessage(prompt)
+                        .model(model)
+                        .maxCompletionTokens(maxTokens)
+                        .temperature(temperature)
+                        .build();
+
+                ChatCompletion completion = openAIClient.chat().completions().create(params);
+
+                String result = completion.choices().stream()
+                        .flatMap(choice -> choice.message().content().stream())
+                        .collect(Collectors.joining("\n"));
+
+                log.info("OpenAI response success => user={}, model={}, tokensEstimate={}", userId, model, tokensEstimate);
+                return result;
+            } catch (Exception e) {
+                log.error("OpenAI request failed => user={}, model={}, tokensEstimate={}", userId, model, tokensEstimate);
+                throw new RuntimeException(e);
+            }
+        };
+
+        Supplier<String> decorated = io.github.resilience4j.retry.Retry.decorateSupplier(resilienceRetry, supplier);
+        decorated = io.github.resilience4j.circuitbreaker.CircuitBreaker.decorateSupplier(resilienceCircuitBreaker, decorated);
+
         try {
-            ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                    .addUserMessage(prompt)
-                    .model(model)
-                    .maxCompletionTokens(maxTokens)
-                    .temperature(temperature)
-                    .build();
-
-            ChatCompletion completion = openAIClient.chat().completions().create(params);
-
-            return completion.choices().stream()
-                    .flatMap(choice -> choice.message().content().stream())
-                    .collect(Collectors.joining("\n"));
+            return decorated.get();
         } catch (Exception e) {
-            log.error("Error calling OpenAI SDK", e);
+            log.error("Error calling OpenAI SDK (decorated) => user={}", userId, e);
             return null;
         }
     }
@@ -208,7 +265,8 @@ public class OpenAiSdkService {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(6);
 
-        List<Transaction> transactions = transactionRepository.findUserTransactionsByDateRange(userId, startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findUserTransactionsByDateRange(userId, startDate,
+                endDate);
 
         BigDecimal totalIncome = transactions.stream()
                 .filter(t -> t.getType() == TransactionType.INCOME)

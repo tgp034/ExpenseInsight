@@ -27,5 +27,23 @@ services:
       timeout: 3s
       retries: 5
 
+  backend:
+    build: ./backend
+    container_name: expenseinsight-backend
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/expenseinsight
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin123
+      # Provide OpenAI API key in deployment env; do NOT commit real key
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - openai.model=${OPENAI_MODEL:-gpt-4o-mini}
+      - openai.max.tokens=${OPENAI_MAX_TOKENS:-300}
+      - openai.temperature=${OPENAI_TEMPERATURE:-0.7}
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data:

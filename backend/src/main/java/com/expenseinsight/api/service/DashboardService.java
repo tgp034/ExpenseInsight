@@ -22,13 +22,15 @@ import java.util.stream.Collectors;
 /**
  * Service class for dashboard and statistics operations.
  * 
- * <p>Provides comprehensive financial analysis including:</p>
+ * <p>
+ * Provides comprehensive financial analysis including:
+ * </p>
  * <ul>
- *   <li>Summary dashboards with key metrics</li>
- *   <li>Category-wise expense breakdowns</li>
- *   <li>Budget tracking and alerts</li>
- *   <li>Monthly trends and comparisons</li>
- *   <li>Statistical analysis of spending patterns</li>
+ * <li>Summary dashboards with key metrics</li>
+ * <li>Category-wise expense breakdowns</li>
+ * <li>Budget tracking and alerts</li>
+ * <li>Monthly trends and comparisons</li>
+ * <li>Statistical analysis of spending patterns</li>
  * </ul>
  * 
  * @author ExpenseInsight Team
@@ -46,17 +48,19 @@ public class DashboardService {
     /**
      * Generates a comprehensive dashboard summary for a specific period.
      * 
-     * <p>Includes:</p>
+     * <p>
+     * Includes:
+     * </p>
      * <ul>
-     *   <li>Income, expenses, and net balance</li>
-     *   <li>Expense breakdown by category</li>
-     *   <li>Budget overview</li>
-     *   <li>Monthly trend for the last 6 months</li>
+     * <li>Income, expenses, and net balance</li>
+     * <li>Expense breakdown by category</li>
+     * <li>Budget overview</li>
+     * <li>Monthly trend for the last 6 months</li>
      * </ul>
      * 
-     * @param userId ID of the user
+     * @param userId    ID of the user
      * @param startDate Start date of the period
-     * @param endDate End date of the period
+     * @param endDate   End date of the period
      * @return Dashboard summary with all metrics
      * @throws ResourceNotFoundException if user not found
      */
@@ -108,9 +112,9 @@ public class DashboardService {
     /**
      * Generates detailed statistics for a user's spending patterns.
      * 
-     * @param userId ID of the user
+     * @param userId    ID of the user
      * @param startDate Start date of analysis period
-     * @param endDate End date of analysis period
+     * @param endDate   End date of analysis period
      * @return Detailed statistics response
      */
     @Transactional(readOnly = true)
@@ -139,7 +143,7 @@ public class DashboardService {
         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
         // Calculate averages
-        BigDecimal averageDailyExpense = days > 0 
+        BigDecimal averageDailyExpense = days > 0
                 ? totalExpenses.divide(BigDecimal.valueOf(days), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
@@ -155,8 +159,7 @@ public class DashboardService {
         Map<String, BigDecimal> categoryTotals = expenses.stream()
                 .collect(Collectors.groupingBy(
                         t -> t.getCategory().getName(),
-                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
-                ));
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)));
 
         Map.Entry<String, BigDecimal> topCategory = categoryTotals.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
@@ -165,17 +168,19 @@ public class DashboardService {
         // Calculate savings rate
         Double savingsRate = totalIncome.compareTo(BigDecimal.ZERO) > 0
                 ? totalIncome.subtract(totalExpenses)
-                    .divide(totalIncome, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .doubleValue()
+                        .divide(totalIncome, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .doubleValue()
                 : 0.0;
 
         return StatisticsResponse.builder()
                 .averageDailyExpense(averageDailyExpense)
                 .averageWeeklyExpense(averageWeeklyExpense)
                 .averageMonthlyExpense(averageMonthlyExpense)
-                .largestExpense(largestExpenseTransaction != null ? largestExpenseTransaction.getAmount() : BigDecimal.ZERO)
-                .largestExpenseDescription(largestExpenseTransaction != null ? largestExpenseTransaction.getDescription() : "N/A")
+                .largestExpense(
+                        largestExpenseTransaction != null ? largestExpenseTransaction.getAmount() : BigDecimal.ZERO)
+                .largestExpenseDescription(
+                        largestExpenseTransaction != null ? largestExpenseTransaction.getDescription() : "N/A")
                 .topSpendingCategory(topCategory != null ? topCategory.getKey() : "N/A")
                 .topSpendingAmount(topCategory != null ? topCategory.getValue() : BigDecimal.ZERO)
                 .savingsRate(savingsRate)
@@ -185,7 +190,7 @@ public class DashboardService {
     /**
      * Calculates expense breakdown by category.
      * 
-     * @param transactions List of transactions to analyze
+     * @param transactions  List of transactions to analyze
      * @param totalExpenses Total expense amount for percentage calculation
      * @return List of category expenses with percentages
      */
@@ -199,15 +204,15 @@ public class DashboardService {
                 .map(entry -> {
                     List<Transaction> categoryTransactions = entry.getValue();
                     Transaction sample = categoryTransactions.get(0);
-                    
+
                     BigDecimal categoryTotal = categoryTransactions.stream()
                             .map(Transaction::getAmount)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     Double percentage = totalExpenses.compareTo(BigDecimal.ZERO) > 0
                             ? categoryTotal.divide(totalExpenses, 4, RoundingMode.HALF_UP)
-                                .multiply(BigDecimal.valueOf(100))
-                                .doubleValue()
+                                    .multiply(BigDecimal.valueOf(100))
+                                    .doubleValue()
                             : 0.0;
 
                     return CategoryExpense.builder()
@@ -228,8 +233,8 @@ public class DashboardService {
      * Generates budget overview for a specific month.
      * 
      * @param userId ID of the user
-     * @param month Month (1-12)
-     * @param year Year
+     * @param month  Month (1-12)
+     * @param year   Year
      * @return Budget overview with aggregate information
      */
     private BudgetOverview getBudgetOverview(Long userId, Integer month, Integer year) {
@@ -260,8 +265,8 @@ public class DashboardService {
 
         Double percentageUsed = totalBudgeted.compareTo(BigDecimal.ZERO) > 0
                 ? totalSpent.divide(totalBudgeted, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .doubleValue()
+                        .multiply(BigDecimal.valueOf(100))
+                        .doubleValue()
                 : 0.0;
 
         Integer budgetsExceeded = (int) budgets.stream()
@@ -281,7 +286,7 @@ public class DashboardService {
     /**
      * Generates monthly trend data for the last N months.
      * 
-     * @param userId ID of the user
+     * @param userId     ID of the user
      * @param monthsBack Number of months to include
      * @return List of monthly data points
      */

@@ -34,3 +34,25 @@ jwt.expiration=86400000
 
 # CORS Configuration (for frontend)
 cors.allowed.origins=http://localhost:3000
+
+# OpenAI configuration (set in production as environment variable `OPENAI_API_KEY`)
+# For local development you can copy these to `application-local.properties` (gitignored)
+openai.model=gpt-4o-mini
+openai.max.tokens=300
+openai.temperature=0.7
+
+# Resilience / retry defaults
+openai.retry.count=3
+openai.retry.initialDelayMs=500
+
+# Rate limiting (AI endpoints)
+ai.rate.limit.requests-per-minute=60
+ai.rate.limit.capacity=60
+ai.rate.limit.free.requests-per-minute=10
+ai.rate.limit.premium.requests-per-minute=200
+
+# Redis (optional) - for distributed rate limiting add REDIS_URL or host/port
+# spring.redis.url=redis://localhost:6379
+# spring.redis.host=localhost
+# spring.redis.port=6379
+
