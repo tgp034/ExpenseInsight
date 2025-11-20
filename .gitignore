@@ -60,12 +60,8 @@ next-env.d.ts
 backend/target/
 !**/src/main/**/target/
 !**/src/test/**/target/
-.mvn/wrapper/maven-wrapper.jar
 
 # Maven wrapper & scripts
-backend/.mvn/
-backend/mvnw
-backend/mvnw.cmd
 backend/gradlew
 backend/gradlew.bat
 
