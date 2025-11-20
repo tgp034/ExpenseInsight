@@ -11,7 +11,7 @@ import com.expenseinsight.api.repository.TransactionRepository;
 import com.openai.client.OpenAIClient;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,7 +32,6 @@ import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OpenAiSdkService {
 
@@ -59,8 +58,16 @@ public class OpenAiSdkService {
     private io.github.resilience4j.retry.Retry resilienceRetry;
     private io.github.resilience4j.circuitbreaker.CircuitBreaker resilienceCircuitBreaker;
 
+        public OpenAiSdkService(ObjectProvider<OpenAIClient> openAIClientProvider,
+                                                        CategoryRepository categoryRepository,
+                                                        TransactionRepository transactionRepository) {
+                this.openAIClient = openAIClientProvider.getIfAvailable(() -> null);
+                this.categoryRepository = categoryRepository;
+                this.transactionRepository = transactionRepository;
+        }
+
         @jakarta.annotation.PostConstruct
-    private void initResilience() {
+        private void initResilience() {
         io.github.resilience4j.retry.RetryConfig retryConfig = io.github.resilience4j.retry.RetryConfig.custom()
                 .maxAttempts(retryCount + 1) // resilience4j counts attempts including initial
                 .waitDuration(java.time.Duration.ofMillis(retryInitialDelayMs))
@@ -206,6 +213,10 @@ public class OpenAiSdkService {
     }
 
     private String callChatCompletion(String model, String prompt, Integer maxTokens, Double temperature) {
+                if (openAIClient == null) {
+                        log.warn("OpenAI client not configured (openai.enabled=false). Skipping AI call.");
+                        return null;
+                }
         int tokensEstimate = Math.max(1, prompt.length() / 4);
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

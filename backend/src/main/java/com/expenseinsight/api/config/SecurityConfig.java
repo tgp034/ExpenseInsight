@@ -1,7 +1,10 @@
 package com.expenseinsight.api.config;
 
 import com.expenseinsight.api.security.JwtAuthenticationFilter;
+import com.expenseinsight.api.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +29,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Security configuration class for ExpenseInsight API.
@@ -73,7 +81,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
     @Value("#{'${cors.allowed.origins:http://localhost:3000}'.split(',')}")
@@ -99,7 +106,7 @@ public class SecurityConfig {
      * @throws Exception if configuration fails
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, OncePerRequestFilter jwtAuthFilter) throws Exception {
         http
                 // Disable CSRF (not needed for stateless JWT authentication)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -234,5 +241,22 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public OncePerRequestFilter jwtAuthFilter(org.springframework.beans.factory.ObjectProvider<com.expenseinsight.api.security.JwtUtil> jwtUtilProvider,
+                                              com.expenseinsight.api.security.CustomUserDetailsService userDetailsService) {
+        com.expenseinsight.api.security.JwtUtil jwtUtil = jwtUtilProvider.getIfAvailable();
+        if (jwtUtil != null) {
+            return new com.expenseinsight.api.security.JwtAuthenticationFilter(jwtUtil, userDetailsService);
+        }
+
+        // No-op filter: simply pass through requests when JwtUtil is not available (e.g. slice tests)
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+                filterChain.doFilter(request, response);
+            }
+        };
     }
 }
