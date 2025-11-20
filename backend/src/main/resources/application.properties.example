@@ -1,58 +1,59 @@
-# Application
+# Base application configuration
 spring.application.name=expense-insight-api
-server.port=8080
+server.port=${SERVER_PORT:8080}
 
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/expenseinsight
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
+# Database (override in application-local.properties for secrets)
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/expenseinsight}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:expense_user}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:expense_pass}
 spring.datasource.driver-class-name=org.postgresql.Driver
 
-# JPA/Hibernate
+# JPA/Hibernate settings
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# Flyway
+# Flyway migrations
 spring.flyway.enabled=true
 spring.flyway.baseline-on-migrate=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.baseline-version=0
 
-# Security (dev)
-spring.security.user.name=${DEV_USER}
-spring.security.user.password=${DEV_PASS}
+# Security defaults (dev)
+spring.security.user.name=${DEV_USER:admin}
+spring.security.user.password=${DEV_PASS:admin}
 
 # Logging
 logging.level.org.springframework.security=DEBUG
-logging.level.com.expenseinsight=DEBUG
+logging.level.com.expenseinsight=INFO
 
-# JWT Configuration
-jwt.secret=${JWT_SECRET}
-jwt.expiration=86400000
+# JWT configuration
+jwt.secret=${JWT_SECRET:change-me}
+jwt.expiration=${JWT_EXPIRATION:86400000}
 
-# CORS Configuration (for frontend)
-cors.allowed.origins=http://localhost:3000
+# CORS allowed origins
+cors.allowed.origins=${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
-# OpenAI configuration (set in production as environment variable `OPENAI_API_KEY`)
-# For local development you can copy these to `application-local.properties` (gitignored)
-openai.model=gpt-4o-mini
-openai.max.tokens=300
-openai.temperature=0.7
+# OpenAI configuration
+openai.model=${OPENAI_MODEL:gpt-4o-mini}
+openai.max.tokens=${OPENAI_MAX_TOKENS:300}
+openai.temperature=${OPENAI_TEMPERATURE:0.7}
 
-# Resilience / retry defaults
-openai.retry.count=3
-openai.retry.initialDelayMs=500
+# Retry defaults for OpenAI client
+openai.retry.count=${OPENAI_RETRY_COUNT:3}
+openai.retry.initialDelayMs=${OPENAI_RETRY_INITIAL_DELAY_MS:500}
 
-# Rate limiting (AI endpoints)
-ai.rate.limit.requests-per-minute=60
-ai.rate.limit.capacity=60
-ai.rate.limit.free.requests-per-minute=10
-ai.rate.limit.premium.requests-per-minute=200
+# Rate limiting defaults
+ai.rate.limit.requests-per-minute=${AI_RATE_LIMIT_RPM:60}
+ai.rate.limit.capacity=${AI_RATE_LIMIT_CAPACITY:60}
+ai.rate.limit.free.requests-per-minute=${AI_RATE_LIMIT_FREE_RPM:10}
+ai.rate.limit.premium.requests-per-minute=${AI_RATE_LIMIT_PREMIUM_RPM:200}
 
-# Redis (optional) - for distributed rate limiting add REDIS_URL or host/port
+# Redis (optional)
 # spring.redis.url=redis://localhost:6379
 # spring.redis.host=localhost
 # spring.redis.port=6379
 
+# Local overrides (ignored by Git). Create application-local.properties to replace secrets.
+spring.config.import=optional:classpath:application-local.properties

@@ -37,6 +37,12 @@ expense-insight/
 - PostgreSQL 15+
 - Docker Desktop (optional)
 
+### Backend configuration
+
+- Copy `backend/src/main/resources/application-local.properties.example` to `application-local.properties` and set your secrets locally (the real file is gitignored).
+- The committed `application.properties` uses safe defaults and loads `application-local.properties` automatically when present.
+- Flyway migrations live under `backend/src/main/resources/db/migration`.
+
 ## 🏃 Quick Start
 
 ### Database (Docker)
@@ -49,6 +55,14 @@ docker-compose up -d
 cd backend
 ./mvnw spring-boot:run
 ```
+
+To run the backend tests:
+
+```bash
+cd backend
+mvn test
+```
+
 
 ### Frontend
 ```bash
