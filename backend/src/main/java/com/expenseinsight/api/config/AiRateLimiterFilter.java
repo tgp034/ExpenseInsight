@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Order(200)
+@Slf4j
 public class AiRateLimiterFilter extends OncePerRequestFilter {
 
     @Value("${ai.rate.limit.requests-per-minute:60}")
@@ -65,8 +67,10 @@ public class AiRateLimiterFilter extends OncePerRequestFilter {
         response.setHeader("X-RateLimit-Remaining", String.valueOf(result.remaining()));
         response.setHeader("X-RateLimit-Reset", String.valueOf(result.resetSeconds()));
         if (result.allowed()) {
+            log.debug("AI rate limit allowed for key={} remaining={} resetIn={}s", key, result.remaining(), result.resetSeconds());
             filterChain.doFilter(request, response);
         } else {
+            log.warn("AI rate limit exceeded for key={} limit={} resetIn={}s", key, limit, result.resetSeconds());
             response.setStatus(429);
             response.setHeader("Retry-After", String.valueOf(result.resetSeconds()));
             response.getWriter().write("Too many requests - rate limit exceeded for AI endpoints");

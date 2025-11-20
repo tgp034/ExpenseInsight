@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,8 +28,16 @@ class CategoryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private CategoryService categoryService;
+        @Autowired
+        private CategoryService categoryService;
+
+        @TestConfiguration
+        static class MockConfig {
+                @Bean
+                public CategoryService categoryService() {
+                        return Mockito.mock(CategoryService.class);
+                }
+        }
 
     @Test
     @DisplayName("should return all categories")
