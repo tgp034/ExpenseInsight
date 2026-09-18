@@ -19,14 +19,12 @@ Personal expense analyzer with AI support.
 ```
 expense-insight/
 ├── backend/          # REST API with Spring Boot
-├── frontend/         # Next.js Application
 ├── docker-compose.yml
 └── README.md
 ```
 
 ## 🛠️ Prerequisites
 
-- Node.js 22.x LTS
 - JDK 21
 - PostgreSQL 15+
 - Docker Desktop (optional)
@@ -55,14 +53,6 @@ To run the backend tests:
 ```bash
 cd backend
 mvn test
-```
-
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
 ```
 
 ## 📝 Project Status
