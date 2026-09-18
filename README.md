@@ -4,12 +4,6 @@ Personal expense analyzer with AI support.
 
 ## 🚀 Tech Stack
 
-### Frontend
-- Next.js 14+ (React, TypeScript)
-- Tailwind CSS
-- React Query
-- Recharts
-
 ### Backend
 - Java 21
 - Spring Boot 3.2+
