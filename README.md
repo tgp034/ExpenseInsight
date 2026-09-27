@@ -57,7 +57,7 @@ mvn test
 
 ## 📝 Project Status
 
-🚧 Under active development
+🚧 Backend complete. Frontend on hold.
 
 ## 📄 License
 
